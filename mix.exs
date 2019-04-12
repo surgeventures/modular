@@ -18,7 +18,7 @@ defmodule Modular.MixProject do
       package: package(),
 
       # Docs
-      name: "Sea",
+      name: "Modular",
       docs: docs()
     ]
   end
@@ -52,7 +52,7 @@ defmodule Modular.MixProject do
       maintainers: ["Karol Słuszniak"],
       licenses: ["MIT"],
       links: %{
-        "GitHub" => "https://github.com/surgeventures/sea-elixir",
+        "GitHub" => "https://github.com/surgeventures/modular",
         "Shedul" => "https://www.shedul.com"
       },
       files: ~w(.formatter.exs mix.exs LICENSE.md README.md CHANGELOG.md lib)
@@ -63,7 +63,7 @@ defmodule Modular.MixProject do
     [
       main: "readme",
       source_ref: "v#{@version}",
-      canonical: "http://hexdocs.pm/sea",
+      canonical: "http://hexdocs.pm/modular",
       source_url: "https://github.com/surgeventures/modular",
       extras: extras()
     ]

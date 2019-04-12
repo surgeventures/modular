@@ -1,18 +1,5 @@
 defmodule Modular do
   @moduledoc """
-  Documentation for Modular.
+  Apply modular programming principles and patterns to build better Elixir apps.
   """
-
-  @doc """
-  Hello world.
-
-  ## Examples
-
-      iex> Modular.hello()
-      :world
-
-  """
-  def hello do
-    :world
-  end
 end
