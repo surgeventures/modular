@@ -52,15 +52,16 @@ defmodule Modular.Delegate do
 
     quote bind_quoted: [fun: fun] do
       alias Contracted.Interface.Helpers
+      alias Kernel.Utils
 
       {fun_name_atom, _, _} = fun
       fun_name = to_string(fun_name_atom)
       %{context_modules: [interface_mod]} = __ENV__
 
-      impl_mod = Contracted.Interface.Helpers.get_impl_mod(fun_name, @contracted_impl_mod)
-      target_func = Contracted.Interface.Helpers.get_target_func(fun_name, @contracted_impl_func)
+      impl_mod = Helpers.get_impl_mod(fun_name, @contracted_impl_mod)
+      target_func = Helpers.get_target_func(fun_name, @contracted_impl_func)
       target = :"#{interface_mod}.#{impl_mod}"
-      {name, args, as, as_args} = Kernel.Utils.defdelegate(fun, to: target, as: target_func)
+      {name, args, as, as_args} = Utils.defdelegate(fun, to: target, as: target_func)
 
       @doc delegate_to: {target, as, :erlang.length(as_args)}
       def unquote(name)(unquote_splicing(args)) do

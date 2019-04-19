@@ -40,17 +40,9 @@ defmodule Modular.Mutability do
     command = Module.delete_attribute(env.module, :command)
     query = Module.delete_attribute(env.module, :query)
 
-    if (command || query) && kind != :def do
-      raise_compile_error(env, "@command/@query can only be set for public functions")
-    end
-
-    if command != nil && query != nil do
-      raise_compile_error(env, "@command/@query cannot be both set at the same time")
-    end
-
-    if (command != nil && command != true) || (query != nil && query != true) do
-      raise_compile_error(env, "@command/@query can only be set to true")
-    end
+    validate_kind(env, command, query, kind)
+    validate_mutex(env, command, query)
+    validate_value(env, command, query)
 
     if command do
       Module.put_attribute(env.module, :commands, name)
@@ -58,6 +50,24 @@ defmodule Modular.Mutability do
 
     if query do
       Module.put_attribute(env.module, :queries, name)
+    end
+  end
+
+  defp validate_kind(env, command, query, kind) do
+    if (command || query) && kind != :def do
+      raise_compile_error(env, "@command/@query can only be set for public functions")
+    end
+  end
+
+  defp validate_mutex(env, command, query) do
+    if command != nil && query != nil do
+      raise_compile_error(env, "@command/@query cannot be both set at the same time")
+    end
+  end
+
+  defp validate_value(env, command, query) do
+    if (command != nil && command != true) || (query != nil && query != true) do
+      raise_compile_error(env, "@command/@query can only be set to true")
     end
   end
 

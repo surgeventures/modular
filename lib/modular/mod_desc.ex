@@ -76,7 +76,7 @@ defmodule Modular.ModDesc do
   end
 
   def put_public_ancestor(modules) do
-    mod_map = Enum.map(modules, &{&1.name, &1}) |> Map.new()
+    mod_map = modules |> Enum.map(&{&1.name, &1}) |> Map.new()
 
     Enum.map(modules, fn mod ->
       Map.put(mod, :public_ancestor, get_public_ancestor(mod, mod_map))
