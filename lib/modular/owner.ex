@@ -4,12 +4,14 @@ defmodule Modular.Owner do
 
   ## Examples
 
-      defmodule Invoicing do
-        use Modular.Owner
-
-        @owner "me@example.com"
-      end
-
+      iex> defmodule Invoicing do
+      iex>   use Modular.Owner
+      iex>
+      iex>   @owner "me@example.com"
+      iex> end
+      iex>
+      iex> Invoicing.__owner__()
+      "me@example.com"
   """
 
   defmacro __using__(_) do

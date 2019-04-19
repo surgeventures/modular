@@ -1,6 +1,22 @@
 defmodule Modular.Delegate do
   @moduledoc """
   Defines thin contracts with convention-driven call delegation to internal implementations.
+
+  ## Example
+
+      iex> defmodule Invoicing.CreateUser do
+      iex>   def call(name), do: {:ok, name}
+      iex> end
+      iex>
+      iex> defmodule Invoicing do
+      iex>   use Modular.Delegate
+      iex>
+      iex>   defcall create_user(name)
+      iex> end
+      iex>
+      iex> Invoicing.create_user("Mike")
+      {:ok, "Mike"}
+
   """
 
   defmodule Helpers do
@@ -49,14 +65,14 @@ defmodule Modular.Delegate do
 
   defmacro defcall(fun) do
     fun = Macro.escape(fun, unquote: true)
+    interface_mod = __CALLER__.module
 
-    quote bind_quoted: [fun: fun] do
+    quote bind_quoted: [fun: fun, interface_mod: interface_mod] do
       alias Contracted.Interface.Helpers
       alias Kernel.Utils
 
       {fun_name_atom, _, _} = fun
       fun_name = to_string(fun_name_atom)
-      %{context_modules: [interface_mod]} = __ENV__
 
       impl_mod = Helpers.get_impl_mod(fun_name, @contracted_impl_mod)
       target_func = Helpers.get_target_func(fun_name, @contracted_impl_func)

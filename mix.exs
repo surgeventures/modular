@@ -32,7 +32,7 @@ defmodule Modular.MixProject do
   defp deps do
     [
       {:credo, "~> 1.0", optional: true},
-      {:ex_doc, "~> 0.20", only: :docs},
+      {:ex_doc, "~> 0.20", only: :dev},
       {:excoveralls, "~> 0.10", only: :test},
       {:junit_formatter, "~> 3.0", only: :test}
     ]
