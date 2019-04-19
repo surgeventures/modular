@@ -1,4 +1,4 @@
-defmodule Modular.Check.AreaAccess do
+defmodule Modular.AreaAccess do
   @moduledoc """
   Ensures that module access is limited to given area's public contract.
 
@@ -46,7 +46,7 @@ defmodule Modular.Check.AreaAccess do
           %{
             name: "default",
             checks: [
-              {Modular.Check.AreaAccess, ignore_callers: [~r/Test$/]}
+              {Modular.AreaAccess, ignore_callers: [~r/Test$/]}
             ]
           }
         ]
@@ -136,17 +136,17 @@ defmodule Modular.Check.AreaAccess do
      language (eg. the `apply/3` function). Credo check is further limited by executing static AST
      analysis without compilation and only on a set of linted files. It's a best effort solution.
 
-  2. This check ignores deps that have undefined publicity, so it's recommended to complement it
-     with Credo's own `Credo.Check.Readability.ModuleDoc` in order to ensure that all modules are
-     forced to define it via the `@moduledoc` attribute.
-
-  3. Current implementation of this check follows idiomatic Elixir with a supoort for just one
+  2. Current implementation of this check follows idiomatic Elixir with a supoort for just one
      global level of publicity indicated via `@moduledoc` string - there's no concept of "public
      within an app or within specific parent area" although [there are discussions about adding it
      to Elixir
      language](https://elixirforum.com/t/proposal-private-modules-general-discussion/19374). Right
      now, you must choose between eg. making app-wide modules public for sake of accessing them in
      nested areas or wrapping them in single larger area.
+
+  3. This check ignores deps that have undefined publicity, so it's recommended to complement it
+     with Credo's own `Credo.Check.Readability.ModuleDoc` in order to ensure that all modules are
+     forced to define it via the `@moduledoc` attribute.
 
   4. In current implementation, usage of dependencies is not tracked down to specific points inside
      the caller module, but rather to its `defmodule`. This may be an inconvenience but it also
@@ -159,8 +159,10 @@ defmodule Modular.Check.AreaAccess do
 
   """
 
+  @checkdoc @moduledoc
+
   @explanation [
-    check: @moduledoc,
+    check: @checkdoc,
     params: [
       ignore_callers:
         "All caller modules matching this regex (or list of regexes) will be ignored",
@@ -174,7 +176,7 @@ defmodule Modular.Check.AreaAccess do
     ignore_deps: []
   ]
 
-  use Credo.Check, base_priority: :high, category: :design, run_on_all: true
+  use Credo.Check, category: :design, run_on_all: true
 
   alias Credo.Execution.ExecutionIssues
   alias Modular.ModDesc
@@ -192,11 +194,11 @@ defmodule Modular.Check.AreaAccess do
   defp find_forbidden_deps(modules, params) do
     ignore_callers = Params.get(params, :ignore_callers, @default_params)
     ignore_deps = Params.get(params, :ignore_deps, @default_params)
-    checkable_callers = filter_module_names(modules, ignore_callers)
+    checkable_callers = ModDesc.reject_names(modules, ignore_callers)
 
     checkable_deps =
       modules
-      |> filter_module_names(ignore_deps)
+      |> ModDesc.reject_names(ignore_deps)
       |> filter_with_publicity()
 
     Enum.flat_map(checkable_callers, fn %ModDesc{deps: deps} = mod ->
@@ -206,24 +208,6 @@ defmodule Modular.Check.AreaAccess do
       |> Enum.filter(&(not allowed_dep?(mod, &1)))
       |> Enum.map(&{mod, &1})
     end)
-  end
-
-  defp filter_module_names(modules, ignore_deps) do
-    Enum.filter(modules, fn %ModDesc{name: name} ->
-      not matches_any?(name, ignore_deps)
-    end)
-  end
-
-  defp matches_any?(name, list) when is_list(list) do
-    Enum.any?(list, &matches_any?(name, &1))
-  end
-
-  defp matches_any?(name, string) when is_binary(string) do
-    String.contains?(name, string)
-  end
-
-  defp matches_any?(name, regex) do
-    String.match?(name, regex)
   end
 
   defp filter_with_publicity(modules) do

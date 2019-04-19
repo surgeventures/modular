@@ -1,4 +1,6 @@
 defmodule Modular.ModDesc do
+  @moduledoc false
+
   defstruct [:source_file, :line, :ast, :name, :deps, :public, :public_ancestor]
 
   alias Credo.Code
@@ -43,11 +45,11 @@ defmodule Modular.ModDesc do
     aliases = Module.aliases(ast)
     modules = Module.modules(ast)
 
-    Enum.reduce(modules, aliases, fn m, acc ->
-      if Enum.find(acc, fn alia -> String.ends_with?(alia, m) end) do
-        acc
+    Enum.reduce(modules, aliases, fn mod, aliases ->
+      if Enum.find(aliases, &String.ends_with?(&1, mod)) do
+        aliases
       else
-        [m | acc]
+        [mod | aliases]
       end
     end)
   end
@@ -77,31 +79,32 @@ defmodule Modular.ModDesc do
     mod_map = Enum.map(modules, &{&1.name, &1}) |> Map.new()
 
     Enum.map(modules, fn mod ->
-      ancestor = get_public_ancestor(mod, mod_map)
-      Map.put(mod, :public_ancestor, (ancestor && ancestor.name) || get_root_name(mod.name))
+      Map.put(mod, :public_ancestor, get_public_ancestor(mod, mod_map))
     end)
   end
 
-  defp get_public_ancestor(%__MODULE__{public: true} = mod, _mod_map) do
-    mod
-  end
-
   defp get_public_ancestor(%__MODULE__{name: name}, mod_map) do
-    find_ancestor(name, mod_map, & &1.public)
+    Enum.find(get_ancestor_names(name), fn ancestor_name ->
+      cond do
+        root_name?(ancestor_name) ->
+          true
+
+        ancestor_mod = Map.get(mod_map, ancestor_name) ->
+          ancestor_mod.public
+
+        true ->
+          false
+      end
+    end)
   end
 
-  defp find_ancestor(name, mod_map, func) do
-    with {:p, parent_name} when not is_nil(parent_name) <- {:p, get_parent_name(name)},
-         {:ok, parent_mod} <- Map.fetch(mod_map, parent_name),
-         true <- func.(parent_mod) do
-      parent_mod
-    else
-      {:p, nil} ->
-        nil
-
-      _ ->
-        find_ancestor(get_parent_name(name), mod_map, func)
-    end
+  defp get_ancestor_names(name) do
+    name
+    |> String.split(".")
+    |> Enum.reduce([], fn
+      part, [] -> [part]
+      part, [last_name | _] = results -> [last_name <> "." <> part | results]
+    end)
   end
 
   def get_parent_name(name) do
@@ -112,11 +115,25 @@ defmodule Modular.ModDesc do
     end
   end
 
-  defp get_root_name(name) do
-    String.replace(name, ~r/(\.\w+)+$/, "")
-  end
-
   defp root_name?(name) do
     !String.contains?(name, ".")
+  end
+
+  def reject_names(modules, ignore_deps) do
+    Enum.filter(modules, fn %__MODULE__{name: name} ->
+      not matches_any?(name, ignore_deps)
+    end)
+  end
+
+  defp matches_any?(name, list) when is_list(list) do
+    Enum.any?(list, &matches_any?(name, &1))
+  end
+
+  defp matches_any?(name, string) when is_binary(string) do
+    String.contains?(name, string)
+  end
+
+  defp matches_any?(name, regex) do
+    String.match?(name, regex)
   end
 end
