@@ -8,8 +8,7 @@ patterns in their projects. It includes checks for defining and enforcing modula
 
 Modular currently offers following tools:
 
-- `Modular.AreaAccess` - ensures that module access is limited to given area's public contract
-- `Modular.ContractTests` - ensures that public contracts are always covered with tests
+- `Modular.AreaAccess` - allows to declare external deps and optionally resolve them to mocks
 - `Modular.Delegate` - defines thin contracts with call delegation to internal implementations
 - `Modular.Mutability` - provides command/query annotations for functions within area contracts
 - `Modular.Owner` - provides ownership annotations for area contracts

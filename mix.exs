@@ -1,7 +1,7 @@
 defmodule Modular.MixProject do
   use Mix.Project
 
-  @version "0.1.0"
+  @version "0.2.0"
   @desc "Apply modular programming principles and patterns to build better Elixir apps"
 
   def project do
@@ -10,8 +10,6 @@ defmodule Modular.MixProject do
       version: @version,
       elixir: "~> 1.7",
       deps: deps(),
-      test_coverage: [tool: ExCoveralls],
-      preferred_cli_env: preferred_cli_env(),
 
       # Hex
       description: @desc,
@@ -31,19 +29,7 @@ defmodule Modular.MixProject do
 
   defp deps do
     [
-      {:credo, "~> 1.0", optional: true},
-      {:ex_doc, "~> 0.20", only: :dev},
-      {:excoveralls, "~> 0.10", only: :test},
-      {:junit_formatter, "~> 3.0", only: :test}
-    ]
-  end
-
-  defp preferred_cli_env do
-    [
-      coveralls: :test,
-      "coveralls.detail": :test,
-      "coveralls.post": :test,
-      "coveralls.html": :test
+      {:ex_doc, "~> 0.20", only: :dev}
     ]
   end
 
