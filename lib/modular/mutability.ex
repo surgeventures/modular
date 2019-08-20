@@ -36,10 +36,17 @@ defmodule Modular.Mutability do
 
   defmacro __before_compile__(_env) do
     quote do
+      Module.delete_attribute(__MODULE__, :query)
+      Module.delete_attribute(__MODULE__, :command)
+
       @doc false
       def __mutability__(:commands), do: @commands
       def __mutability__(:queries), do: @queries
     end
+  end
+
+  def __on_definition__(_, _, :__mutability__, _, _, _) do
+    :ok
   end
 
   def __on_definition__(env, kind, name, _args, _guards, _body) do
