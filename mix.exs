@@ -29,7 +29,8 @@ defmodule Modular.MixProject do
 
   defp deps do
     [
-      {:ex_doc, "~> 0.20", only: :dev}
+      {:ex_doc, "~> 0.20", only: :dev},
+      {:mox, ">= 0.0.0", optional: true}
     ]
   end
 

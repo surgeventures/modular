@@ -152,7 +152,13 @@ defmodule Modular.AreaAccess do
   end
 
   defp areas do
-    Application.get_env(:modular, :areas, []) |> Enum.filter(&Code.ensure_loaded?/1)
+    areas = Application.get_env(:modular, :areas) || raise("area list is missing")
+
+    Enum.each(areas, fn area ->
+      unless Code.ensure_compiled?(area), do: raise("area not found: #{inspect(area)}")
+    end)
+
+    areas
   end
 
   def define_mox_mocks do
