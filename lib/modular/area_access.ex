@@ -8,10 +8,6 @@ defmodule Modular.AreaAccess do
 
       config :modular,
         area_mocking_enabled: Mix.env() == :test,
-        areas: [
-          MyApp.First,
-          MyApp.Second
-        ]
 
   Define area behaviours and implementations:
 
@@ -58,7 +54,12 @@ defmodule Modular.AreaAccess do
   Setup mocks for `Mox` in`test/suport/mocks.ex` (follow `Mox` docs on including the `test/support`
   directory in compile paths):
 
-      Modular.AreaAccess.define_mox_mocks()
+      Modular.AreaAccess.define_mocks(
+        [
+          MyApp.First,
+          MyApp.Second
+        ]
+      )
 
   Then stub back to real implementations:
 
@@ -72,7 +73,12 @@ defmodule Modular.AreaAccess do
         end
 
         setup do
-          Modular.AreaAccess.install_mox_stubs()
+          Modular.AreaAccess.install_stubs(
+            [
+              MyApp.First,
+              MyApp.Second
+            ]
+          )
           :ok
         end
       end
@@ -126,7 +132,6 @@ defmodule Modular.AreaAccess do
 
   defmacro impl(mod_ast) do
     mod = Macro.expand(mod_ast, __CALLER__)
-    unless mod in areas(), do: raise("unknown area #{inspect(mod)}")
 
     if Module.get_attribute(__CALLER__.module, :area_impl_def) do
       Module.put_attribute(__CALLER__.module, :area_impl_call, mod)
@@ -151,21 +156,11 @@ defmodule Modular.AreaAccess do
     Module.concat(mod, "Impl")
   end
 
-  defp areas do
-    areas = Application.get_env(:modular, :areas) || raise("area list is missing")
-
-    Enum.each(areas, fn area ->
-      unless Code.ensure_compiled?(area), do: raise("area not found: #{inspect(area)}")
-    end)
-
-    areas
+  def define_mocks(areas) do
+    for mod <- areas, do: apply(Mox, :defmock, [mock_impl(mod), [for: mod]])
   end
 
-  def define_mox_mocks do
-    for mod <- areas(), do: apply(Mox, :defmock, [mock_impl(mod), [for: mod]])
-  end
-
-  def install_mox_stubs do
-    for mod <- areas(), do: apply(Mox, :stub_with, [mock_impl(mod), real_impl(mod)])
+  def install_stubs(areas) do
+    for mod <- areas, do: apply(Mox, :stub_with, [mock_impl(mod), real_impl(mod)])
   end
 end
