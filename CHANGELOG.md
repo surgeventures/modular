@@ -1,9 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.3.0
 
-(add changes here)
+- *Fixed* `Modular.AreaAccess` for umbrella projects
 
-## 0.1.0
+## 0.2.0
 
-- Initial versioned release
+- *Added* `Modular.AreaAccess`
+- *Removed* all checks (moved to separate project)

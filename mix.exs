@@ -1,7 +1,7 @@
 defmodule Modular.MixProject do
   use Mix.Project
 
-  @version "0.2.0"
+  @version "0.3.0"
   @desc "Apply modular programming principles and patterns to build better Elixir apps"
 
   def project do
