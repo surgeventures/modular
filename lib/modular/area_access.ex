@@ -4,11 +4,6 @@ defmodule Modular.AreaAccess do
 
   ## Usage
 
-  Configure when mocking is enabled:
-
-      config :modular,
-        area_mocking_enabled: Mix.env() == :test
-
   Define area behaviours and implementations:
 
       defmodule MyApp.First do
@@ -51,17 +46,21 @@ defmodule Modular.AreaAccess do
 
   ## Mocking
 
-  Setup mocks for `Mox` in`test/suport/mocks.ex` (follow `Mox` docs on including the `test/support`
-  directory in compile paths):
+  Enable mocking and configure areas that are viable for it in `config/test.exs`:
 
-      Modular.AreaAccess.define_mocks(
-        [
+      config :modular,
+        area_mocking_enabled: true,
+        areas: [
           MyApp.First,
           MyApp.Second
         ]
-      )
 
-  Then stub back to real implementations:
+  Setup mocks for `Mox` in`test/suport/mocks.ex` (follow `Mox` docs on including the `test/support`
+  directory in compile paths):
+
+      Modular.AreaAccess.define_mocks()
+
+  Then allow usage of any areas from test cases and stub them back to real implementations:
 
       defmodule MyCase do
         use ExUnit.CaseTemplate
@@ -73,12 +72,8 @@ defmodule Modular.AreaAccess do
         end
 
         setup do
-          Modular.AreaAccess.install_stubs(
-            [
-              MyApp.First,
-              MyApp.Second
-            ]
-          )
+          Modular.AreaAccess.install_stubs()
+
           :ok
         end
       end
@@ -158,17 +153,25 @@ defmodule Modular.AreaAccess do
 
   ## Mocking
 
-  def define_mocks(areas) do
-    for mod <- areas, do: run_mox(:defmock, [mock_impl(mod), [for: mod]])
+  def define_mocks do
+    for mod <- areas(),
+        not Code.ensure_loaded?(mock_impl(mod)),
+        do: run_mox(:defmock, [mock_impl(mod), [for: mod]])
   end
 
-  def install_stubs(areas) do
-    for mod <- areas, do: run_mox(:stub_with, [mock_impl(mod), real_impl(mod)])
+  def install_stubs do
+    for mod <- areas(), do: run_mox(:stub_with, [mock_impl(mod), real_impl(mod)])
   end
 
   # We don't want Mox to be a compile-time dependency for this code because modular will be compiled
   # and used in non-test envs in which Mox is not present.
   defp run_mox(func, args) do
     apply(Mox, func, args)
+  end
+
+  defp areas do
+    :modular
+    |> Application.fetch_env!(:areas)
+    |> Enum.filter(&Code.ensure_compiled?/1)
   end
 end
