@@ -4,15 +4,15 @@ defmodule Modular.Mutability do
 
   ## Examples
 
-      iex> defmodule Invoicing do
-      iex>   use Modular.Mutability
-      iex>
-      iex>   @command true
-      iex>   def create_user, do: :error
-      iex>
-      iex>   @query true
-      iex>   def get_users, do: []
-      iex> end
+      defmodule Invoicing do
+        use Modular.Mutability
+
+        @command true
+        def create_user, do: :error
+
+        @query true
+        def get_users, do: []
+      end
 
   """
 

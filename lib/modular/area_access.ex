@@ -4,15 +4,6 @@ defmodule Modular.AreaAccess do
 
   ## Usage
 
-  Configure the list of areas and mocking conditions:
-
-      config :modular,
-        area_mocking_enabled: Mix.env() == :test,
-        areas: [
-          MyApp.First,
-          MyApp.Second
-        ]
-
   Define area behaviours and implementations:
 
       defmodule MyApp.First do
@@ -55,12 +46,21 @@ defmodule Modular.AreaAccess do
 
   ## Mocking
 
+  Enable mocking and configure areas that are viable for it in `config/test.exs`:
+
+      config :modular,
+        area_mocking_enabled: true,
+        areas: [
+          MyApp.First,
+          MyApp.Second
+        ]
+
   Setup mocks for `Mox` in`test/suport/mocks.ex` (follow `Mox` docs on including the `test/support`
   directory in compile paths):
 
-      Modular.AreaAccess.define_mox_mocks()
+      Modular.AreaAccess.define_mocks()
 
-  Then stub back to real implementations:
+  Then allow usage of any areas from test cases and stub them back to real implementations:
 
       defmodule MyCase do
         use ExUnit.CaseTemplate
@@ -72,7 +72,8 @@ defmodule Modular.AreaAccess do
         end
 
         setup do
-          Modular.AreaAccess.install_mox_stubs()
+          Modular.AreaAccess.install_stubs()
+
           :ok
         end
       end
@@ -115,7 +116,11 @@ defmodule Modular.AreaAccess do
 
   defmacro __before_compile__(env) do
     defined = Module.delete_attribute(env.module, :area_impl_def)
-    called = Module.delete_attribute(env.module, :area_impl_call) |> Enum.uniq()
+
+    called =
+      env.module
+      |> Module.delete_attribute(:area_impl_call)
+      |> Enum.uniq()
 
     undefined = Enum.map(called -- defined, &inspect/1)
     if Enum.any?(undefined), do: raise("calling unlisted area #{Enum.join(undefined, ", ")}")
@@ -126,7 +131,6 @@ defmodule Modular.AreaAccess do
 
   defmacro impl(mod_ast) do
     mod = Macro.expand(mod_ast, __CALLER__)
-    unless mod in areas(), do: raise("unknown area #{inspect(mod)}")
 
     if Module.get_attribute(__CALLER__.module, :area_impl_def) do
       Module.put_attribute(__CALLER__.module, :area_impl_call, mod)
@@ -151,15 +155,27 @@ defmodule Modular.AreaAccess do
     Module.concat(mod, "Impl")
   end
 
+  ## Mocking
+
+  def define_mocks do
+    for mod <- areas(),
+        not Code.ensure_loaded?(mock_impl(mod)),
+        do: run_mox(:defmock, [mock_impl(mod), [for: mod]])
+  end
+
+  def install_stubs do
+    for mod <- areas(), do: run_mox(:stub_with, [mock_impl(mod), real_impl(mod)])
+  end
+
+  # We don't want Mox to be a compile-time dependency for this code because modular will be compiled
+  # and used in non-test envs in which Mox is not present.
+  defp run_mox(func, args) do
+    apply(Mox, func, args)
+  end
+
   defp areas do
-    Application.get_env(:modular, :areas, []) |> Enum.filter(&Code.ensure_loaded?/1)
-  end
-
-  def define_mox_mocks do
-    for mod <- areas(), do: apply(Mox, :defmock, [mock_impl(mod), [for: mod]])
-  end
-
-  def install_mox_stubs do
-    for mod <- areas(), do: apply(Mox, :stub_with, [mock_impl(mod), real_impl(mod)])
+    :modular
+    |> Application.fetch_env!(:areas)
+    |> Enum.filter(&Code.ensure_compiled?/1)
   end
 end
