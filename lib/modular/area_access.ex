@@ -4,10 +4,10 @@ defmodule Modular.AreaAccess do
 
   ## Usage
 
-  Configure the list of areas and mocking conditions:
+  Configure when mocking is enabled:
 
       config :modular,
-        area_mocking_enabled: Mix.env() == :test,
+        area_mocking_enabled: Mix.env() == :test
 
   Define area behaviours and implementations:
 
@@ -156,11 +156,19 @@ defmodule Modular.AreaAccess do
     Module.concat(mod, "Impl")
   end
 
+  ## Mocking
+
   def define_mocks(areas) do
-    for mod <- areas, do: apply(Mox, :defmock, [mock_impl(mod), [for: mod]])
+    for mod <- areas, do: run_mox(:defmock, [mock_impl(mod), [for: mod]])
   end
 
   def install_stubs(areas) do
-    for mod <- areas, do: apply(Mox, :stub_with, [mock_impl(mod), real_impl(mod)])
+    for mod <- areas, do: run_mox(:stub_with, [mock_impl(mod), real_impl(mod)])
+  end
+
+  # We don't want Mox to be a compile-time dependency for this code because modular will be compiled
+  # and used in non-test envs in which Mox is not present.
+  defp run_mox(func, args) do
+    apply(Mox, func, args)
   end
 end
