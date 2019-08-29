@@ -116,7 +116,11 @@ defmodule Modular.AreaAccess do
 
   defmacro __before_compile__(env) do
     defined = Module.delete_attribute(env.module, :area_impl_def)
-    called = Module.delete_attribute(env.module, :area_impl_call) |> Enum.uniq()
+
+    called =
+      env.module
+      |> Module.delete_attribute(:area_impl_call)
+      |> Enum.uniq()
 
     undefined = Enum.map(called -- defined, &inspect/1)
     if Enum.any?(undefined), do: raise("calling unlisted area #{Enum.join(undefined, ", ")}")
