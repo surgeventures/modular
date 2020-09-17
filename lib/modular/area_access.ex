@@ -94,6 +94,47 @@ defmodule Modular.AreaAccess do
         end
       end
 
+  ## Hammox integration
+
+  Next to normal stubs you can introduce stubs that upon each call,
+  direct or not, will be checked against it's type specification.
+
+      config :modular,
+        area_mocking_enabled: true,
+        areas: [
+          MyApp.First
+        ]
+        typed_areas: [
+          MyApp.Second
+        ]
+
+  And then extend you test setup with explicite stub instalation
+
+        defmodule MyCase do
+        use ExUnit.CaseTemplate
+
+        using do
+          quote do
+            use Modular.AreaAccess, :all
+          end
+        end
+
+        setup do
+          Modular.AreaAccess.install_stubs()
+          Modular.AreaAccess.install_typed_stubs()
+
+          :ok
+        end
+      end
+
+  With this as soon as any call (again, direct or not) to
+  `impl(Module.Second).other()` will return anything not conforming to
+  `c Module.Second.other/0` callback type specification your test will
+  fail with `Hammox.TypeMatchError`.
+
+  If you don't want to install your typed-stub globally simply use
+  `Modular.AreaAcces.typed_stub/1` for stubbing , or
+  `Modular.AreaAccess.typed_stub/3` to stub only one function.
   """
 
   defmacro __using__(:all) do
@@ -160,22 +201,57 @@ defmodule Modular.AreaAccess do
   def define_mocks do
     for mod <- areas(),
         not Code.ensure_loaded?(mock_impl(mod)),
-        do: run_mox(:defmock, [mock_impl(mod), [for: mod]])
+        do: mox(:defmock, [mock_impl(mod), [for: mod]])
   end
 
   def install_stubs do
-    for mod <- areas(), do: run_mox(:stub_with, [mock_impl(mod), real_impl(mod)])
+    for mod <- areas(), do: mox(:stub_with, [mock_impl(mod), real_impl(mod)])
   end
 
-  # We don't want Mox to be a compile-time dependency for this code because modular will be compiled
-  # and used in non-test envs in which Mox is not present.
-  defp run_mox(func, args) do
-    apply(Mox, func, args)
+  def install_typed_stubs do
+    for mod <- type_checked_areas(), do: typed_stub(mod)
+  end
+
+  def typed_stub(module) do
+    module.behaviour_info(:callbacks)
+    |> Enum.each(fn {function_name, arity} ->
+      typed_stub(module, function_name, arity)
+    end)
+  end
+
+  def typed_stub(behaviour, callback_name, arity) do
+    lambda = hammox(:protect, [{real_impl(behaviour), callback_name, arity}, behaviour])
+    hammox(:stub, [mock_impl(behaviour), callback_name, lambda])
+  end
+
+  # We don't want Mox and Hammox to be a compile-time dependency for
+  # this code because modular will be compiled and used in non-test
+  # envs in which Mox is not present.
+
+  defp hammox(function_name, args) do
+    apply(Hammox, function_name, args)
+  end
+
+  defp mox(function_name, args) do
+    apply(Mox, function_name, args)
   end
 
   defp areas do
     :modular
     |> Application.fetch_env!(:areas)
-    |> Enum.filter(&Code.ensure_compiled?/1)
+    |> Enum.filter(&ensure_compiled?/1)
+  end
+
+  defp type_checked_areas do
+    :modular
+    |> Application.fetch_env!(:typed_areas)
+    |> Enum.filter(&ensure_compiled?/1)
+  end
+
+  defp ensure_compiled?(module) do
+    case Code.ensure_compiled(module) do
+      {:module, _compiled} -> true
+      _ -> false
+    end
   end
 end
