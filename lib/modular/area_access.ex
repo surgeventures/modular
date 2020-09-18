@@ -199,7 +199,7 @@ defmodule Modular.AreaAccess do
   ## Mocking
 
   def define_mocks do
-    for mod <- areas(),
+    for mod <- type_checked_areas() ++ areas(),
         not Code.ensure_loaded?(mock_impl(mod)),
         do: mox(:defmock, [mock_impl(mod), [for: mod]])
   end
