@@ -176,6 +176,6 @@ defmodule Modular.AreaAccess do
   defp areas do
     :modular
     |> Application.fetch_env!(:areas)
-    |> Enum.filter(&Code.ensure_compiled?/1)
+    |> Enum.filter(fn area -> Code.ensure_compiled(area) == {:module, area} end)
   end
 end
