@@ -1,7 +1,7 @@
 defmodule Modular.MixProject do
   use Mix.Project
 
-  @version "0.3.0"
+  @version "0.3.1"
   @desc "Apply modular programming principles and patterns to build better Elixir apps"
 
   def project do
@@ -38,11 +38,10 @@ defmodule Modular.MixProject do
 
   defp package do
     [
-      maintainers: ["Karol Słuszniak"],
       licenses: ["MIT"],
       links: %{
         "GitHub" => "https://github.com/surgeventures/modular",
-        "Shedul" => "https://www.shedul.com"
+        "Fresha" => "https://www.fresha.com"
       },
       files: ~w(.formatter.exs mix.exs LICENSE.md README.md CHANGELOG.md lib)
     ]

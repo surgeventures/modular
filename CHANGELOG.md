@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.1
+
+- *Fixed* `Modular.AreaAccess.install_stubs/0` performance (#4)
+
 ## 0.3.0
 
 - *Fixed* `Modular.AreaAccess` for umbrella projects
