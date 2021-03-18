@@ -96,6 +96,31 @@ defmodule Modular.AreaAccess do
 
   """
 
+  defmodule AreasCache do
+    @moduledoc false
+
+    use Agent
+
+    def start! do
+      case Agent.start_link(
+             fn ->
+               :modular
+               |> Application.fetch_env!(:areas)
+               |> Enum.filter(&Code.ensure_loaded?/1)
+             end,
+             name: __MODULE__
+           ) do
+        {:ok, _} -> :ok
+        {:error, {:already_started, _}} -> :ok
+        _ -> raise "Could not start area cache"
+      end
+    end
+
+    def get do
+      Agent.get(__MODULE__, & &1)
+    end
+  end
+
   defmacro __using__(:all) do
     quote do
       import Modular.AreaAccess, only: [impl: 1]
@@ -158,15 +183,7 @@ defmodule Modular.AreaAccess do
   ## Mocking
 
   def define_mocks do
-    {:ok, _} =
-      Agent.start_link(
-        fn ->
-          :modular
-          |> Application.fetch_env!(:areas)
-          |> Enum.filter(&Code.ensure_loaded?/1)
-        end,
-        name: __MODULE__.AreaCache
-      )
+    AreasCache.start!()
 
     for mod <- areas(),
         not Code.ensure_loaded?(mock_impl(mod)),
@@ -192,6 +209,6 @@ defmodule Modular.AreaAccess do
   end
 
   defp areas do
-    Agent.get(__MODULE__.AreaCache, & &1)
+    AreasCache.get()
   end
 end
