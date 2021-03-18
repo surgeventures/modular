@@ -158,13 +158,31 @@ defmodule Modular.AreaAccess do
   ## Mocking
 
   def define_mocks do
+    {:ok, _} =
+      Agent.start_link(
+        fn ->
+          :modular
+          |> Application.fetch_env!(:areas)
+          |> Enum.filter(&Code.ensure_loaded?/1)
+        end,
+        name: __MODULE__.AreaCache
+      )
+
     for mod <- areas(),
         not Code.ensure_loaded?(mock_impl(mod)),
         do: run_mox(:defmock, [mock_impl(mod), [for: mod]])
   end
 
   def install_stubs do
-    for mod <- areas(), do: run_mox(:stub_with, [mock_impl(mod), real_impl(mod)])
+    for mod <- areas() do
+      mock = mock_impl(mod)
+      real = real_impl(mod)
+
+      for {fun, arity} <- mod.behaviour_info(:callbacks),
+          function_exported?(mock, fun, arity) do
+        run_mox(:stub, [mock, fun, :erlang.make_fun(real, fun, arity)])
+      end
+    end
   end
 
   # We don't want Mox to be a compile-time dependency for this code because modular will be compiled
@@ -174,8 +192,6 @@ defmodule Modular.AreaAccess do
   end
 
   defp areas do
-    :modular
-    |> Application.fetch_env!(:areas)
-    |> Enum.filter(&Code.ensure_compiled?/1)
+    Agent.get(__MODULE__.AreaCache, & &1)
   end
 end
