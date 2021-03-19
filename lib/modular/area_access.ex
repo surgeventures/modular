@@ -112,7 +112,7 @@ defmodule Modular.AreaAccess do
            ) do
         {:ok, _} -> :ok
         {:error, {:already_started, _}} -> :ok
-        _ -> raise "Could not start area cache"
+        {:error, reason} -> raise "Could not start area cache: #{inspect(reason)}"
       end
     end
 
