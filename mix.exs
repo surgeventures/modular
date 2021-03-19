@@ -10,6 +10,7 @@ defmodule Modular.MixProject do
       version: @version,
       elixir: "~> 1.7",
       deps: deps(),
+      elixirc_paths: elixirc_paths(Mix.env()),
 
       # Hex
       description: @desc,
@@ -35,6 +36,9 @@ defmodule Modular.MixProject do
       {:mox, ">= 0.0.0", optional: true}
     ]
   end
+
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib"]
 
   defp package do
     [
