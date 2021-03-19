@@ -99,8 +99,6 @@ defmodule Modular.AreaAccess do
   defmodule AreasCache do
     @moduledoc false
 
-    use Agent
-
     def start! do
       case Agent.start_link(
              fn ->
